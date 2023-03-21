@@ -1,73 +1,75 @@
-# SwiftUI_chipsView_withlabel
+# Cloud Tags / Flowlayout / Chip Layout with SwiftUI
 
 ```swift
-struct ContentView: View {
-    
-    let words = ["Action movies are good", "Horror one", "Comedy is good", "Adventure Park", "Kids", "Sillicon Valley"]
-    
-    var body: some View {
-        TagsView(items: self.words)
-    }
-}
+//
+//  TagsView.swift
+//  Cloud Tags / Flowlayout / Chip Layout
+//
+//  Created by Hasan Ali Şişeci on 21.03.2023.
+//
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
-    }
-}
+import SwiftUI
 
-struct TagsView: View {
-    
-    let items: [String]
-    var grouptedItems: [[String]] = [[String]]()
-    let screenWidth: CGFloat = UIScreen.main.bounds.width
-    
-    init(items: [String]) {
+struct TagsView<T: Hashable, V: View>: View {
+    let items: [T] //Hashable items
+    var lineLimit: Int //How many lines do you want
+    var grouptedItems: [[T]] = [[T]]()
+    let cloudTagView: (T) -> V
+
+    init(items: [T], lineLimit: Int, cloudTagView: @escaping (T) -> V) {
         self.items = items
-        self.grouptedItems = self.createGroupedItems(items)
+        self.cloudTagView = cloudTagView
+        self.lineLimit = lineLimit
+        self.grouptedItems = self.createGroupedItems(items, lineLimit: lineLimit)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading) {
-            ForEach(self.grouptedItems, id: \.self) { subItems in
-                HStack {
-                    ForEach(subItems, id: \.self) { word in
-                        Text(word)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    } //: FOREACH
-                } //: HSTACK
-            } //: FOREACH
-            
-            Spacer()
-        } //: VSTACK
+            ScrollView(.horizontal, showsIndicators: false) {
+                ForEach(self.grouptedItems, id: \.self) { subItems in
+                    HStack {
+                        ForEach(subItems, id: \.self) { word in
+                            cloudTagView(word)
+                        }
+                        Spacer()
+                    }.padding(.horizontal, UI.Spacing.p1)
+                }
+            }
+        }
     }
-    
-    private func createGroupedItems(_ items: [String]) -> [[String]] {
-        var grouptedItems: [[String]] = [[String]]()
-        var tempItems: [String] = [String]()
-        var width: CGFloat = 0
+
+    private func createGroupedItems(_ items: [T], lineLimit: Int) -> [[T]] {
+        var grouptedItems: [[T]] = [[T]]()
+        var tempItems: [T] = [T]()
+
+        let temp = items.count % lineLimit
+        let count = (items.count - temp) / lineLimit
+
         for word in items {
-            let label = UILabel()
-            label.text = word
-            label.sizeToFit()
-            let labelWidth = label.frame.size.width + 32
-            if width + labelWidth + 32 < self.screenWidth {
-                width += labelWidth
+            if tempItems.count < count + 1 {
                 tempItems.append(word)
             } else {
-                width = labelWidth
                 grouptedItems.append(tempItems)
                 tempItems.removeAll()
                 tempItems.append(word)
             }
         }
+
         grouptedItems.append(tempItems)
         return grouptedItems
     }
-    
 }
 
+struct TagView_Previews: PreviewProvider {
+    static let items =  ["Swift", "Java", "Python", "JavaScript", "C++", "Ruby", "PHP", "Objective-C", "C#", "Perl", "Go", "R", "Kotlin", "SwiftUI", "HTML", "CSS", "SQL", "TypeScript", "Scala"]
+    static var previews: some View {
+        TagsView(items: TagView_Previews.items, lineLimit: 3) { item in
+            Text(item)
+                .padding()
+                .foregroundColor(.white)
+                .background(Color.random())
+                .clipShape(Capsule())
+        }
+    }
+}
 ```
